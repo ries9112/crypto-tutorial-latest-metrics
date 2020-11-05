@@ -1,0 +1,74 @@
+---
+title: "cryptocurrencyresearch.org latest model summary"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    theme: spacelab
+    source_code: embed
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(pins)
+library(shiny)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(plotly)
+library(sugrrants)
+# Register pins board for data
+board_register(name = "pins_board", url = "https://raw.githubusercontent.com/predictcrypto/pins/master/", board = "datatxt")
+# Pull data
+data <- pin_get(name = "full_metrics")
+# Add date
+data$date <- as.Date(data$date_utc)
+```
+
+Make Selections {.sidebar}
+-----------------------------------------------------------------------
+
+### Make Selections:
+
+```{r}
+selectInput('metric','Choose the metric to plot:',c('rmse','rsq'), selected = 'rmse', multiple = F)
+
+dateRangeInput("dateRange", "Date range to plot:", format = "yyyy-mm-dd", start=min(as.Date(data$date_time_utc)), end=Sys.Date())
+
+selectInput('crypto','Select a cryptocurrency from the list below:',unique(data$symbol), selected = 'BTC', multiple = T)
+
+selectInput('eval_set','Select an option for the "eval_set":',unique(data$eval_set), selected = "holdout", multiple = T)
+
+selectInput('model','Select the models:',unique(data$model), selected = c('lm','xgb','xgbTree','nnet'), multiple = T)
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Plot Metrics Over Time
+
+```{r}
+renderPlotly({
+  ggplotly(ggplot(
+    data[data$symbol %in% input$crypto & data$eval_set %in% input$eval_set & data$model %in% input$model & as.Date(data$date_time_utc) >= as.character(input$dateRange[1]) & as.Date(data$date_time_utc) <= input$dateRange[2], ],
+    aes(x=date_time_utc, y=input$metric, color = model)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se=F, size=0.5) +
+  facet_wrap(~model+eval_set,scales = 'free')+
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank()))
+})
+```
+
+
+### Data
+
+```{r}
+renderDataTable({
+  DT::datatable(data[data$symbol %in% input$crypto & data$eval_set %in% input$eval_set & data$model %in% input$model & as.Date(data$date_time_utc) >= as.character(input$dateRange[1]) & as.Date(data$date_time_utc) <= input$dateRange[2], ], 
+                options = list(pageLength = 5))
+})
+```

@@ -1,0 +1,12 @@
+name: tutorial_latest_model_summary
+title: tutorial_latest_model_summary
+username:
+account: predictcrypto
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3069752
+bundleId: 3825662
+url: https://predictcrypto.shinyapps.io/tutorial_latest_model_summary/
+when: 1604617873.89175
+asMultiple: FALSE
+asStatic: FALSE
