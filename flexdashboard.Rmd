@@ -36,9 +36,9 @@ selectInput('metric','Choose the metric to plot:',c('rmse','rsq'), selected = 'r
 
 dateRangeInput("dateRange", "Date range to plot:", format = "yyyy-mm-dd", start=min(as.Date(data$date_time_utc)), end=Sys.Date())
 
-selectInput('crypto','Select a cryptocurrency from the list below:',unique(data$symbol), selected = 'BTC', multiple = T)
+selectInput('crypto','Select a cryptocurrency from the list below:',unique(data$symbol), selected = 'BTC', multiple = F)
 
-selectInput('eval_set','Select an option for the "eval_set":',unique(data$eval_set), selected = "holdout", multiple = T)
+selectInput('eval_set','Show Holdout or Test results (or both):',unique(data$eval_set), selected = "holdout", multiple = T)
 
 selectInput('model','Select the models:',unique(data$model), selected = c('lm','xgb','xgbTree','nnet'), multiple = T)
 
@@ -50,16 +50,15 @@ Column {data-width=350}
 ### Plot Metrics Over Time
 
 ```{r}
-renderPlotly({
-  ggplotly(ggplot(
+renderPlot({
+  ggplot(
     data[data$symbol %in% input$crypto & data$eval_set %in% input$eval_set & data$model %in% input$model & as.Date(data$date_time_utc) >= as.character(input$dateRange[1]) & as.Date(data$date_time_utc) <= input$dateRange[2], ],
     aes(x=date_time_utc, y=input$metric, color = model)) +
-  geom_point() +
-  geom_smooth(method = 'lm', se=F, size=0.5) +
-  facet_wrap(~model+eval_set,scales = 'free')+
-  theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank(),
-        axis.title.y=element_blank()))
+  geom_point(aes_string(x="date_time_utc", y= input$metric, color = "model"), size=3) +
+    geom_line(aes_string(x="date_time_utc", y= input$metric, color = "model"), size=1) +
+  facet_wrap(~model+eval_set) +
+    ylab(input$metric) +
+    ggtitle(paste0('Now showing ',input$metric,' metric for ', input$crypto, ' cryptocurrency'))
 })
 ```
 
@@ -68,7 +67,7 @@ renderPlotly({
 
 ```{r}
 renderDataTable({
-  DT::datatable(data[data$symbol %in% input$crypto & data$eval_set %in% input$eval_set & data$model %in% input$model & as.Date(data$date_time_utc) >= as.character(input$dateRange[1]) & as.Date(data$date_time_utc) <= input$dateRange[2], ], 
+  DT::datatable(select(data[data$symbol %in% input$crypto & data$eval_set %in% input$eval_set & data$model %in% input$model & as.Date(data$date_time_utc) >= as.character(input$dateRange[1]) & as.Date(data$date_time_utc) <= input$dateRange[2], ], -date),
                 options = list(pageLength = 5))
 })
 ```
