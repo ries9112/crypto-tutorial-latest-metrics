@@ -36,7 +36,7 @@ selectInput('metric','Choose the metric to plot:',c('rmse','rsq'), selected = 'r
 
 dateRangeInput("dateRange", "Date range to plot:", format = "yyyy-mm-dd", start=min(as.Date(data$date_time_utc)), end=Sys.Date())
 
-selectInput('crypto','Select a cryptocurrency from the list below:',unique(data$symbol), selected = 'BTC', multiple = F)
+selectInput('crypto','Select a cryptocurrency from the list below:',unique(data$symbol), selected = 'ADA', multiple = F)
 
 selectInput('eval_set','Show Holdout or Test results (or both):',unique(data$eval_set), selected = "holdout", multiple = T)
 
