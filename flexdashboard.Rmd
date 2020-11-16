@@ -36,11 +36,12 @@ selectInput('metric','Choose the metric to plot:',c('rmse','rsq'), selected = 'r
 
 dateRangeInput("dateRange", "Date range to plot:", format = "yyyy-mm-dd", start=min(as.Date(data$date_time_utc)), end=Sys.Date())
 
-selectInput('crypto','Select a cryptocurrency from the list below:',unique(data$symbol), selected = 'ADA', multiple = F)
+selectInput('crypto','Select a cryptocurrency from the list below:',unique(data$symbol), selected = 'ADA', multiple = T)
 
 selectInput('eval_set','Show Holdout or Test results (or both):',unique(data$eval_set), selected = "holdout", multiple = T)
 
-selectInput('model','Select the models:',unique(data$model), selected = c('lm','xgb','xgbTree','nnet'), multiple = T)
+selectInput('model','Select the models:', c('lm','xgb','nnet','rf','pcr'),
+            selected = c('lm','xgb','nnet','rf'), multiple = T)
 
 ```
 
@@ -51,17 +52,25 @@ Column {data-width=350}
 
 ```{r}
 renderPlot({
+  # Filter by the cryptocurrency before grouping by rest of the fields
+  data <- filter(data, symbol %in% input$crypto)
+  # Group data to add multiple cryptocurrencies as one point
+  data <- group_by(data, model, eval_set, date_time_utc) %>%
+             summarise(rmse = mean(rmse, na.rm = TRUE),
+                       rsq = mean(rsq, na.rm = TRUE))
+  # Make the plot:
   ggplot(
-    data[data$symbol %in% input$crypto & data$eval_set %in% input$eval_set & data$model %in% input$model & as.Date(data$date_time_utc) >= as.character(input$dateRange[1]) & as.Date(data$date_time_utc) <= input$dateRange[2], ],
+    data[data$eval_set %in% input$eval_set & data$model %in% input$model & as.Date(data$date_time_utc) >= as.character(input$dateRange[1]) & as.Date(data$date_time_utc) <= input$dateRange[2], ],
     aes(x=date_time_utc, y=input$metric, color = model)) +
   geom_point(aes_string(x="date_time_utc", y= input$metric, color = "model"), size=3) +
     geom_line(aes_string(x="date_time_utc", y= input$metric, color = "model"), size=1) +
   facet_wrap(~model+eval_set) +
     ylab(input$metric) +
-    ggtitle(paste0('Now showing ',input$metric,' metric for ', input$crypto, ' cryptocurrency'))
-})
-```
+    ggtitle(paste0('Now showing ', ifelse(input$metric == 'rmse', 'RMSE','R^2'),' metric', ifelse(length(input$crypto) == 1, paste0(' for ', input$crypto, ' cryptocurrency'), paste0(' averaged for the ', length(input$crypto), ' selected cryptocurrencies'))))
 
+})
+
+```
 
 ### Data
 
